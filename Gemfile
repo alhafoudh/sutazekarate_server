@@ -2,6 +2,8 @@
 
 source "https://rubygems.org"
 
+ruby '3.2.4'
+
 # gem "rails"
 
 gem "pry", "~> 0.14.2"
