@@ -12,6 +12,10 @@ class App < Sinatra::Base
     register Sinatra::Reloader
   end
 
+  get '/up' do
+    'OK'
+  end
+
   get '/competitions.json' do
     content_type :json
 
