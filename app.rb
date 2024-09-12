@@ -2,6 +2,7 @@ require 'bundler'
 Bundler.require
 
 require 'json'
+require 'active_support/all'
 
 class App < Sinatra::Base
   configure do
@@ -64,6 +65,15 @@ class App < Sinatra::Base
     end)
   end
 
+  get '/competitions/:id/timetables.json' do
+    content_type :json
+
+    id = params[:id]
+    json(using_cache(:competition_timetables, id) do
+      fetch_competition_timetables(id)
+    end)
+  end
+
   private
 
   def fetch_competitions
@@ -113,12 +123,7 @@ class App < Sinatra::Base
   def fetch_category_export(id)
     category = Sutazekarate::Category.new(id:)
 
-    promises = [
-      category.async.competitors,
-      category.async.ladder,
-    ].flatten
-
-    promises.map(&:value)
+    category.preload!
 
     JSON.pretty_generate(category.as_json(
       include: {
@@ -129,6 +134,20 @@ class App < Sinatra::Base
               include: :pairs
             }
           }
+        },
+      }
+    ))
+  end
+
+  def fetch_competition_timetables(id)
+    competition = Sutazekarate::Competition.new(id:)
+
+    competition.preload!
+
+    JSON.pretty_generate(competition.timetables.as_json(
+      include: {
+        entries: {
+          include: :category,
         },
       }
     ))

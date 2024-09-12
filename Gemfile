@@ -13,7 +13,7 @@ gem "puma", "~> 6.4"
 gem "sinatra-contrib", "~> 4.0"
 
 
-gem "sutazekarate", "~> 0.0.2"
+gem "sutazekarate", "~> 0.0.5"
 
 gem "clockwork", "~> 3.0"
 
@@ -24,3 +24,5 @@ gem "http", "~> 5.2"
 gem "redlock", "~> 2.0"
 
 gem "redis-client", "~> 0.22.2"
+
+gem "activesupport", "~> 7.2"
