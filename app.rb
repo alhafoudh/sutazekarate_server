@@ -33,45 +33,50 @@ class App < Sinatra::Base
   get '/competitions.json' do
     content_type :json
 
-    json(using_cache(:competition, :all) do
+    updated_at, data = using_cache(:competition, :all) do
       fetch_competitions
-    end)
+    end
+    json(updated_at:, data:)
   end
 
   get '/competitions/:id/export.json' do
     content_type :json
 
     id = params[:id]
-    json(using_cache(:competition_export, id) do
+    updated_at, data = using_cache(:competition_export, id) do
       fetch_competition_export(id)
-    end)
+    end
+    json(updated_at:, data:)
   end
 
   get '/competitions/:id/categories.json' do
     content_type :json
 
     id = params[:id]
-    json(using_cache(:competition_categories, id) do
+    updated_at, data = using_cache(:competition_categories, id) do
       fetch_competition_categories(id)
-    end)
+    end
+    json(updated_at:, data:)
   end
 
   get '/categories/:id/export.json' do
     content_type :json
 
     id = params[:id]
-    json(using_cache(:category_export, id) do
+    updated_at, data = using_cache(:category_export, id) do
       fetch_category_export(id)
-    end)
+    end
+    json(updated_at:, data:)
   end
 
   get '/competitions/:id/timetables.json' do
     content_type :json
 
     id = params[:id]
-    json(using_cache(:competition_timetables, id) do
+    updated_at, data = using_cache(:competition_timetables, id) do
       fetch_competition_timetables(id)
-    end)
+    end
+    json(updated_at:, data:)
   end
 
   private
@@ -79,7 +84,7 @@ class App < Sinatra::Base
   def fetch_competitions
     competitions = Sutazekarate::Competition.all
 
-    JSON.pretty_generate(competitions.as_json)
+    competitions.as_json
   end
 
   def fetch_competition_export(id)
@@ -94,7 +99,7 @@ class App < Sinatra::Base
 
     promises.map(&:value)
 
-    JSON.pretty_generate(competition.as_json(
+    competition.as_json(
       include: {
         categories: {
           include: {
@@ -109,7 +114,7 @@ class App < Sinatra::Base
           }
         },
       }
-    ))
+    )
   end
 
   def fetch_competition_categories(id)
@@ -117,7 +122,7 @@ class App < Sinatra::Base
 
     categories = competition.categories
 
-    JSON.pretty_generate(categories.as_json)
+    categories.as_json
   end
 
   def fetch_category_export(id)
@@ -125,7 +130,7 @@ class App < Sinatra::Base
 
     category.preload!
 
-    JSON.pretty_generate(category.as_json(
+    category.as_json(
       include: {
         competitors: {},
         ladder: {
@@ -136,7 +141,7 @@ class App < Sinatra::Base
           }
         },
       }
-    ))
+    )
   end
 
   def fetch_competition_timetables(id)
@@ -144,13 +149,13 @@ class App < Sinatra::Base
 
     competition.preload!
 
-    JSON.pretty_generate(competition.timetables.as_json(
+    competition.timetables.as_json(
       include: {
         entries: {
           include: :category,
         },
       }
-    ))
+    )
   end
 
   def using_cache(prefix, id)
@@ -160,25 +165,32 @@ class App < Sinatra::Base
     lock_key = "#{prefix}:#{id}:lock"
 
     redis_pool.with do |redis|
-      data = redis.call('GET', cache_key)
+      data = redis.call('GET', cache_key).then do |data|
+        if data
+          JSON.parse(data)
+        end
+      end
       last_updated_at_value = redis.call('GET', timestamp_cache_key)
-      last_updated_at = last_updated_at_value ? Time.parse(last_updated_at_value) : nil
+      last_updated_at = last_updated_at_value ? Time.zone.parse(last_updated_at_value) : nil
 
+      updated_at = nil
       promise = nil
-      should_update_cache = last_updated_at.nil? || (Time.now - last_updated_at) > cache_duration
+      should_update_cache = last_updated_at.nil? || (Time.zone.now - last_updated_at) > cache_duration
       if should_update_cache
         lock_info = lock_manager.lock(lock_key, 60000)
 
         if lock_info
           promise = Concurrent::Promise.execute do
             data = yield
+            updated_at = Time.zone.now
 
-            redis.call('SET', cache_key, data)
-            redis.call('SET', timestamp_cache_key, Time.now.iso8601)
+            redis.call('SET', cache_key, JSON.pretty_generate(data))
+            redis.call('SET', timestamp_cache_key, updated_at.iso8601)
 
             data
           rescue => ex
-            puts "Error: #{ex}"
+            logger.error ex.message
+            logger.error ex.backtrace.join("\n")
           ensure
             lock_manager.unlock(lock_info)
           end
@@ -191,7 +203,7 @@ class App < Sinatra::Base
         promise&.value
       end
 
-      JSON.parse(result)
+      [updated_at || last_updated_at, result]
     end
   end
 
