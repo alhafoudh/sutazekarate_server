@@ -191,6 +191,7 @@ class App < Sinatra::Base
           rescue => ex
             logger.error ex.message
             logger.error ex.backtrace.join("\n")
+            data = { error: ex.message }
           ensure
             lock_manager.unlock(lock_info)
           end
