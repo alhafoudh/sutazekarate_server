@@ -13,7 +13,7 @@ gem "puma", "~> 6.4"
 gem "sinatra-contrib", "~> 4.0"
 
 
-gem "sutazekarate", "~> 0.0.7"
+gem "sutazekarate", "~> 0.0.9"
 
 gem "clockwork", "~> 3.0"
 
