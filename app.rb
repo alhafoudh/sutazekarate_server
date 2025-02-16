@@ -39,6 +39,16 @@ class App < Sinatra::Base
     json(updated_at:, data:)
   end
 
+  get '/competitions/:id.json' do
+    content_type :json
+
+    id = params[:id]
+    updated_at, data = using_cache(:competition, id) do
+      fetch_competition(id)
+    end
+    json(updated_at:, data:)
+  end
+
   get '/competitions/:id/export.json' do
     content_type :json
 
@@ -87,8 +97,14 @@ class App < Sinatra::Base
     competitions.as_json
   end
 
+  def fetch_competition(id)
+    competition = Sutazekarate::Competition.find(id)
+
+    competition.as_json
+  end
+
   def fetch_competition_export(id)
-    competition = Sutazekarate::Competition.new(id:)
+    competition = Sutazekarate::Competition.find(id)
 
     promises = competition.categories.map do |category|
       [
