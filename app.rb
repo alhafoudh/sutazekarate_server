@@ -120,10 +120,25 @@ class App < Sinatra::Base
         categories: {
           include: {
             competitors: {},
-            ladder: {
+            draw_ladder: {
               include: {
-                stages: {
-                  include: :pairs
+                pools: {
+                  include: {
+                    stages: {
+                      include: :pairs
+                    }
+                  }
+                }
+              }
+            },
+            results_ladder: {
+              include: {
+                pools: {
+                  include: {
+                    stages: {
+                      include: :pairs
+                    }
+                  }
                 }
               }
             },
