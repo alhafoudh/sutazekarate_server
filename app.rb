@@ -157,17 +157,32 @@ class App < Sinatra::Base
   end
 
   def fetch_category_export(id)
-    category = Sutazekarate::Category.new(id:)
+    category = Sutazekarate::Category.find(id)
 
     category.preload!
 
     category.as_json(
       include: {
         competitors: {},
-        ladder: {
+        draw_ladder: {
           include: {
-            stages: {
-              include: :pairs
+            pools: {
+              include: {
+                stages: {
+                  include: :pairs
+                }
+              }
+            }
+          }
+        },
+        results_ladder: {
+          include: {
+            pools: {
+              include: {
+                stages: {
+                  include: :pairs
+                }
+              }
             }
           }
         },
