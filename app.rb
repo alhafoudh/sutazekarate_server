@@ -100,13 +100,7 @@ class App < Sinatra::Base
   def fetch_competition(id)
     competition = Sutazekarate::Competition.find(id)
 
-    competition.as_json(
-      methods: [
-        :has_draw_flat,
-        :has_draw_ladder,
-        :has_results_ladder,
-      ]
-    )
+    competition.as_json
   end
 
   def fetch_competition_export(id)
@@ -124,6 +118,11 @@ class App < Sinatra::Base
     competition.as_json(
       include: {
         categories: {
+          methods: [
+            :draw_ladder_url,
+            :draw_ladder_export_url,
+            :results_ladder_url,
+          ],
           include: {
             competitors: {},
             draw_ladder: {
@@ -174,6 +173,11 @@ class App < Sinatra::Base
     category.preload!
 
     category.as_json(
+      methods: [
+        :draw_ladder_url,
+        :draw_ladder_export_url,
+        :results_ladder_url,
+      ],
       include: {
         competitors: {},
         draw_ladder: {
