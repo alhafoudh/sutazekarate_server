@@ -100,7 +100,13 @@ class App < Sinatra::Base
   def fetch_competition(id)
     competition = Sutazekarate::Competition.find(id)
 
-    competition.as_json
+    competition.as_json(
+      methods: [
+        :has_draw_flat,
+        :has_draw_ladder,
+        :has_results_ladder,
+      ]
+    )
   end
 
   def fetch_competition_export(id)
@@ -149,11 +155,17 @@ class App < Sinatra::Base
   end
 
   def fetch_competition_categories(id)
-    competition = Sutazekarate::Competition.new(id:)
+    competition = Sutazekarate::Competition.find(id)
 
     categories = competition.categories
 
-    categories.as_json
+    categories.as_json(
+      methods: [
+        :has_draw_flat,
+        :has_draw_ladder,
+        :has_results_ladder,
+      ]
+    )
   end
 
   def fetch_category_export(id)
@@ -191,7 +203,7 @@ class App < Sinatra::Base
   end
 
   def fetch_competition_timetables(id)
-    competition = Sutazekarate::Competition.new(id:)
+    competition = Sutazekarate::Competition.find(id)
 
     competition.preload!
 
